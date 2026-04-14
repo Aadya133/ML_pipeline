@@ -551,6 +551,19 @@ def styled_df(df_to_show, max_rows=20):
             unsafe_allow_html=True
         )
 
+def detect_problem_type(df, target):
+    y = df[target]
+
+    n_unique = y.nunique()
+    is_numeric = pd.api.types.is_numeric_dtype(y)
+
+    if not is_numeric:
+        return "Classification"
+
+    if n_unique <= 15:
+        return "Classification"
+
+    return "Regression"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # STEP 0 — Problem Type
@@ -591,19 +604,6 @@ if st.session_state.step == 0:
             st.rerun()
 
     
-def detect_problem_type(df, target):
-    y = df[target]
-
-    n_unique = y.nunique()
-    is_numeric = pd.api.types.is_numeric_dtype(y)
-
-    if not is_numeric:
-        return "Classification"
-
-    if n_unique <= 15:
-        return "Classification"
-
-    return "Regression"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # STEP 1 — Input Data
