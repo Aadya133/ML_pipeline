@@ -591,7 +591,19 @@ if st.session_state.step == 0:
             st.rerun()
 
     
+def detect_problem_type(df, target):
+    y = df[target]
 
+    n_unique = y.nunique()
+    is_numeric = pd.api.types.is_numeric_dtype(y)
+
+    if not is_numeric:
+        return "Classification"
+
+    if n_unique <= 15:
+        return "Classification"
+
+    return "Regression"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # STEP 1 — Input Data
@@ -655,6 +667,24 @@ elif st.session_state.step == 1:
         st.markdown("### Target Feature Selection")
         target = st.selectbox("Select your target variable:", df.columns.tolist(), index=len(df.columns)-1)
         st.session_state.target = target
+        
+        # 🚨 SMART WARNING SYSTEM
+        if target:
+            detected_type = detect_problem_type(df, target)
+            user_type = st.session_state.problem_type
+        
+            if user_type and detected_type != user_type:
+                st.warning(
+                    f"⚠️ Possible mismatch detected!\n\n"
+                    f"Selected: **{user_type}**\n"
+                    f"Detected: **{detected_type}**\n\n"
+                    f"This may lead to poor performance."
+                )
+        
+                # 🔁 Auto-fix button
+                if st.button(f"Switch to {detected_type}", key="fix_problem_type"):
+                    st.session_state.problem_type = detected_type
+                    st.rerun()
         feat_cols = [c for c in df.columns if c != target]
         sel_feats = st.multiselect("Select feature columns:", feat_cols, default=feat_cols)
         st.session_state.features = sel_feats
@@ -684,9 +714,8 @@ elif st.session_state.step == 1:
                             labels={'x':'Component','y':'Explained Variance (%)'},
                             title="PCA Explained Variance", color=explained, color_continuous_scale=BAR_SCALE)
             ev_fig.update_layout(**plotly_theme()); st.plotly_chart(ev_fig, use_container_width=True)
-
-        nav_buttons(back=False, next_disabled=(st.session_state.target is None))
-
+        next_disabled = (st.session_state.target is None) or (detected_type != user_type)
+        nav_buttons(back=False, next_disabled=next_disabled)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # STEP 2 — EDA
